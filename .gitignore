@@ -1,0 +1,4 @@
+# Go build & Executable
+pokedexcli
+*.exe
+*.out
