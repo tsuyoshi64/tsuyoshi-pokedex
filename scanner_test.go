@@ -1,98 +1,141 @@
 package main
 
 import (
-	"bufio"
-	"sort"
+	"bytes"
+	"errors"
+	"io"
+	"os"
+	"slices"
 	"strings"
 	"testing"
 )
 
-func TestScannerAndRegistryValidation(t *testing.T) {
-	simulatedInput := strings.Join([]string{
-		"HELP",            // Upper case conversion test
-		"   exiT   ",      // Leading/trailing spaces + mixed case
-		"",                // Empty string line
-		"invalid-command", // Unregistered token
-		"   ",             // Pure space string line
-		"exit help",       // Multi-argument entry (should only match "exit")
-	}, "\n") + "\n"
-
-	reader := strings.NewReader(simulatedInput)
-	scanner := bufio.NewScanner(reader)
-
-	type expectedMatch struct {
-		rawToken    string
-		shouldExist bool
-		expectedKey string
+func TestStartRepl(t *testing.T) {
+	// Ensure commands map is initialized
+	if commands == nil {
+		commands = make(map[string]cliCommand)
 	}
 
-	expectedFlow := []expectedMatch{
-		{rawToken: "HELP", shouldExist: true, expectedKey: "help"},
-		{rawToken: "   exiT   ", shouldExist: true, expectedKey: "exit"},
-		{rawToken: "invalid-command", shouldExist: false, expectedKey: "invalid-command"},
-		{rawToken: "exit help", shouldExist: true, expectedKey: "exit"},
+	// Register a mock error command specifically for testing error output
+	commands["fail"] = cliCommand{
+		name:        "fail",
+		description: "Triggers a test error",
+		callback: func() error {
+			return errors.New("simulated failure")
+		},
+	}
+	defer delete(commands, "fail")
+
+	cases := []struct {
+		name           string
+		input          string
+		expectedOutput []string
+	}{
+		{
+			name:  "empty input produces prompt only",
+			input: "\n",
+			expectedOutput: []string{
+				"Pokedex >> ",
+			},
+		},
+		{
+			name:  "unknown command",
+			input: "invalidcmd\n",
+			expectedOutput: []string{
+				"Unknown command",
+			},
+		},
+		{
+			name:  "valid help command execution",
+			input: "help\n",
+			expectedOutput: []string{
+				"Welcome to the Pokedex!",
+				"Usage:",
+				"help: Displays a help message",
+			},
+		},
+		{
+			name:  "multiple commands and whitespace handling",
+			input: "   \n  help  \n   foobar \n",
+			expectedOutput: []string{
+				"Welcome to the Pokedex!",
+				"Unknown command",
+			},
+		},
+		{
+			name:  "command returning an error",
+			input: "fail\n",
+			expectedOutput: []string{
+				"Error executing command fail: simulated failure",
+			},
+		},
 	}
 
-	flowIndex := 0
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// Redirect os.Stdout to capture fmt.Println output
+			oldStdout := os.Stdout
+			rPipe, wPipe, err := os.Pipe()
+			if err != nil {
+				t.Fatalf("failed to create pipe: %v", err)
+			}
+			os.Stdout = wPipe
 
-	for scanner.Scan() {
-		input := scanner.Text()
-		cleaned := cleanInput(input)
+			inBuffer := strings.NewReader(c.input)
+			outBuffer := &bytes.Buffer{}
 
-		if len(cleaned) == 0 {
-			continue
-		}
+			startRepl(inBuffer, outBuffer)
 
-		if flowIndex >= len(expectedFlow) {
-			t.Fatalf("Processed more non-empty commands than expected array bounds. Extra line: %q", input)
-		}
+			// Restore os.Stdout and close pipe writer
+			wPipe.Close()
+			os.Stdout = oldStdout
 
-		target := expectedFlow[flowIndex]
-		commandName := cleaned[0] // The REPL evaluates the first token slice element
+			var capturedStdout bytes.Buffer
+			_, _ = io.Copy(&capturedStdout, rPipe)
+			rPipe.Close()
 
-		if commandName != target.expectedKey {
-			t.Errorf("Parsing/cleaning logic failure: expected key token %q, processed %q from raw line %q",
-				target.expectedKey, commandName, input)
-		}
+			// Combine REPL stream buffer and captured stdout
+			fullOutput := outBuffer.String() + capturedStdout.String()
 
-		_, exists := commands[commandName]
-		if exists != target.shouldExist {
-			t.Errorf("Registry state failure for command key %q: expected inclusion to be %v, got %v",
-				commandName, target.shouldExist, exists)
-		}
-
-		flowIndex++
-	}
-
-	if err := scanner.Err(); err != nil {
-		t.Errorf("Unexpected scanner stream truncation error: %v", err)
-	}
-
-	if flowIndex != len(expectedFlow) {
-		t.Errorf("Test failed to check all sequential stream assertions. Evaluated %d out of %d entries",
-			flowIndex, len(expectedFlow))
+			for _, expectedSubstr := range c.expectedOutput {
+				if !strings.Contains(fullOutput, expectedSubstr) {
+					t.Errorf("expected output to contain %q, but got:\n%s", expectedSubstr, fullOutput)
+				}
+			}
+		})
 	}
 }
 
-func TestRegistrySortingLogic(t *testing.T) {
-	var keys []string
-	for k := range commands {
-		keys = append(keys, k)
+func TestCleanInputEdgeCases(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected []string
+	}{
+		{
+			name:     "empty input",
+			input:    "",
+			expected: []string{},
+		},
+		{
+			name:     "spaces, tabs, and newlines",
+			input:    " \t  hello \n world  \r\n",
+			expected: []string{"hello", "world"},
+		},
+		{
+			name:     "mixed upper and lower case",
+			input:    "ExIt HeLp",
+			expected: []string{"exit", "help"},
+		},
 	}
 
-	if len(keys) < 2 {
-		t.Fatalf("Global command registry map contains insufficient entries for sorting validation: %v", keys)
-	}
-
-	sort.Strings(keys)
-
-	for i := 0; i < len(keys)-1; i++ {
-		if keys[i] > keys[i+1] {
-			t.Errorf("Sorting calculation failure: key %q incorrectly sequenced before %q", keys[i], keys[i+1])
-		}
-	}
-
-	if keys[0] != "exit" || keys[1] != "help" {
-		t.Errorf("Dynamic alphabet sorting returned bad current index arrays: expected [exit, help], got %v", keys)
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			actual := cleanInput(c.input)
+			if !slices.Equal(actual, c.expected) {
+				t.Errorf("cleanInput(%q) = %v, expected %v", c.input, actual, c.expected)
+			}
+		})
 	}
 }
+
