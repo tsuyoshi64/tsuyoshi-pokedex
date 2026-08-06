@@ -19,7 +19,19 @@ func main() {
 		if len(cleaned) == 0 {
 			continue
 		}
-		fmt.Printf("Your command was: %s\n", cleaned[0])
+
+		commandName := cleaned[0]
+
+		cmd, exists := commands[commandName]
+		if !exists {
+			fmt.Println("Unknown command")
+			continue
+		}
+
+		err := cmd.callback()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing command %s: %v\n", commandName, err)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
