@@ -23,8 +23,8 @@ func TestCleanInput(t *testing.T) {
 			expected: []string{"spaces", "everywhere"},
 		},
 		{
-			input:    "NoSpaceAnywhere",
-			expected: []string{"nospaceanywhere"},
+			input:    "tabs\tseparated\ttext",
+			expected: []string{"tabs", "separated", "text"},
 		},
 		{
 			input:    "",
@@ -35,14 +35,6 @@ func TestCleanInput(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.input, func(t *testing.T) {
 			actual := cleanInput(tc.input)
-
-			// Check if length matches
-			if len(actual) != len(tc.expected) {
-				t.Errorf("Length mismatch for input %q: expected %d, got %d", tc.input, len(tc.expected), len(actual))
-				return
-			}
-
-			// Check if individual elements match
 			if !reflect.DeepEqual(actual, tc.expected) {
 				t.Errorf("Content mismatch for input %q: expected %v, got %v", tc.input, tc.expected, actual)
 			}

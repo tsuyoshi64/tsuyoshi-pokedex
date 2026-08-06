@@ -2,65 +2,97 @@ package main
 
 import (
 	"bufio"
+	"sort"
 	"strings"
 	"testing"
 )
 
-func TestScannerLoopBehavior(t *testing.T) {
+func TestScannerAndRegistryValidation(t *testing.T) {
 	simulatedInput := strings.Join([]string{
-		"hello world",                        // Standard input
-		"   Charmander Bulbasaur PIKACHU   ", // Mixed case with trailing/leading spaces
-		"",                                   // Blank line (should be skipped)
-		"tabs\tseparated\twords",             // Tab characters as whitespace
-		"   ",                                // Only whitespace (should be skipped)
-		"123456 catch_them_all!",             // Numbers and symbols
-		"Squirtle",                           // Single word command
-		"pokedex   ",                         // Word with trailing spaces
+		"HELP",            // Upper case conversion test
+		"   exiT   ",      // Leading/trailing spaces + mixed case
+		"",                // Empty string line
+		"invalid-command", // Unregistered token
+		"   ",             // Pure space string line
+		"exit help",       // Multi-argument entry (should only match "exit")
 	}, "\n") + "\n"
 
 	reader := strings.NewReader(simulatedInput)
 	scanner := bufio.NewScanner(reader)
 
-	expectedFirstWords := []string{
-		"hello",
-		"charmander",
-		"tabs",
-		"123456",
-		"squirtle",
-		"pokedex",
+	type expectedMatch struct {
+		rawToken    string
+		shouldExist bool
+		expectedKey string
 	}
 
-	outputCount := 0
+	expectedFlow := []expectedMatch{
+		{rawToken: "HELP", shouldExist: true, expectedKey: "help"},
+		{rawToken: "   exiT   ", shouldExist: true, expectedKey: "exit"},
+		{rawToken: "invalid-command", shouldExist: false, expectedKey: "invalid-command"},
+		{rawToken: "exit help", shouldExist: true, expectedKey: "exit"},
+	}
+
+	flowIndex := 0
 
 	for scanner.Scan() {
 		input := scanner.Text()
-		cleanedWords := cleanInput(input)
+		cleaned := cleanInput(input)
 
-		if len(cleanedWords) == 0 {
+		if len(cleaned) == 0 {
 			continue
 		}
 
-		if outputCount >= len(expectedFirstWords) {
-			t.Fatalf("Received more valid commands than expected. Extra input parsed: %q", input)
+		if flowIndex >= len(expectedFlow) {
+			t.Fatalf("Processed more non-empty commands than expected array bounds. Extra line: %q", input)
 		}
 
-		expected := expectedFirstWords[outputCount]
-		actual := cleanedWords[0]
+		target := expectedFlow[flowIndex]
+		commandName := cleaned[0] // The REPL evaluates the first token slice element
 
-		if actual != expected {
-			t.Errorf("Line match fail at index %d: expected first word %q, got %q (Original raw input: %q)",
-				outputCount, expected, actual, input)
+		if commandName != target.expectedKey {
+			t.Errorf("Parsing/cleaning logic failure: expected key token %q, processed %q from raw line %q",
+				target.expectedKey, commandName, input)
 		}
 
-		outputCount++
+		_, exists := commands[commandName]
+		if exists != target.shouldExist {
+			t.Errorf("Registry state failure for command key %q: expected inclusion to be %v, got %v",
+				commandName, target.shouldExist, exists)
+		}
+
+		flowIndex++
 	}
 
 	if err := scanner.Err(); err != nil {
-		t.Errorf("Scanner encountered an unexpected runtime error: %v", err)
+		t.Errorf("Unexpected scanner stream truncation error: %v", err)
 	}
 
-	if outputCount != len(expectedFirstWords) {
-		t.Errorf("Count mismatch: Expected to process %d commands, but only processed %d",
-			len(expectedFirstWords), outputCount)
+	if flowIndex != len(expectedFlow) {
+		t.Errorf("Test failed to check all sequential stream assertions. Evaluated %d out of %d entries",
+			flowIndex, len(expectedFlow))
+	}
+}
+
+func TestRegistrySortingLogic(t *testing.T) {
+	var keys []string
+	for k := range commands {
+		keys = append(keys, k)
+	}
+
+	if len(keys) < 2 {
+		t.Fatalf("Global command registry map contains insufficient entries for sorting validation: %v", keys)
+	}
+
+	sort.Strings(keys)
+
+	for i := 0; i < len(keys)-1; i++ {
+		if keys[i] > keys[i+1] {
+			t.Errorf("Sorting calculation failure: key %q incorrectly sequenced before %q", keys[i], keys[i+1])
+		}
+	}
+
+	if keys[0] != "exit" || keys[1] != "help" {
+		t.Errorf("Dynamic alphabet sorting returned bad current index arrays: expected [exit, help], got %v", keys)
 	}
 }
