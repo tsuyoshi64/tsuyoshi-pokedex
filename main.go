@@ -3,14 +3,19 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 )
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
+	startRepl(os.Stdin, os.Stdout)
+}
+
+func startRepl(r io.Reader, w io.Writer) {
+	scanner := bufio.NewScanner(r)
 
 	for {
-		fmt.Print("Pokedex >> ")
+		fmt.Fprint(w, "Pokedex >> ")
 		if !scanner.Scan() {
 			break
 		}
@@ -24,18 +29,18 @@ func main() {
 
 		cmd, exists := commands[commandName]
 		if !exists {
-			fmt.Println("Unknown command")
+			fmt.Fprintln(w, "Unknown command")
 			continue
 		}
 
 		err := cmd.callback()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error executing command %s: %v\n", commandName, err)
+			fmt.Fprintf(w, "Error executing command %s: %v\n", commandName, err)
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading standard input: ", err)
-		os.Exit(1)
+		fmt.Fprintf(w, "Error reading standard input: %v\n", err)
 	}
 }
+
