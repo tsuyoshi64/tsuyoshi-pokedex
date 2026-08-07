@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
+
+	"github.com/tsuyoshi64/pokedexcli/internal/pokeapi"
 )
 
 func main() {
@@ -13,9 +16,13 @@ func main() {
 
 func startRepl(r io.Reader, w io.Writer) {
 	scanner := bufio.NewScanner(r)
+	cfg := &config{
+		writer:        w,
+		pokeapiClient: pokeapi.NewClient(5 * time.Second),
+	}
 
 	for {
-		fmt.Fprint(w, "Pokedex >> ")
+		fmt.Fprint(w, "Pokedex > ")
 		if !scanner.Scan() {
 			break
 		}
@@ -33,7 +40,7 @@ func startRepl(r io.Reader, w io.Writer) {
 			continue
 		}
 
-		err := cmd.callback()
+		err := cmd.callback(cfg)
 		if err != nil {
 			fmt.Fprintf(w, "Error executing command %s: %v\n", commandName, err)
 		}

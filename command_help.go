@@ -5,10 +5,10 @@ import (
 	"sort"
 )
 
-func commandHelp() error {
-	fmt.Println("Welcome to the Pokedex!")
-	fmt.Println("Usage:")
-	fmt.Println()
+func commandHelp(cfg *config) error {
+	fmt.Fprintln(cfg.writer, "Welcome to the Pokedex!")
+	fmt.Fprintln(cfg.writer, "Usage:")
+	fmt.Fprintln(cfg.writer)
 
 	keys := make([]string, 0, len(commands))
 	for k := range commands {
@@ -19,7 +19,7 @@ func commandHelp() error {
 
 	for _, k := range keys {
 		cmd := commands[k]
-		fmt.Printf("%s: %s\n", cmd.name, cmd.description)
+		fmt.Fprintf(cfg.writer, "%s: %s\n", cmd.name, cmd.description)
 	}
 	return nil
 }

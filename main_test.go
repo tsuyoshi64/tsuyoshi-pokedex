@@ -20,7 +20,7 @@ func TestStartRepl(t *testing.T) {
 	commands["fail"] = cliCommand{
 		name:        "fail",
 		description: "Triggers a test error",
-		callback: func() error {
+		callback: func(purls *config) error {
 			return errors.New("simulated failure")
 		},
 	}
