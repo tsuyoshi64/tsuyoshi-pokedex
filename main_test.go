@@ -138,4 +138,3 @@ func TestCleanInputEdgeCases(t *testing.T) {
 		})
 	}
 }
-
