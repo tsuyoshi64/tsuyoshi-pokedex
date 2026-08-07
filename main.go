@@ -18,11 +18,11 @@ func startRepl(r io.Reader, w io.Writer) {
 	scanner := bufio.NewScanner(r)
 	cfg := &config{
 		writer:        w,
-		pokeapiClient: pokeapi.NewClient(5 * time.Second),
+		pokeapiClient: pokeapi.NewClient(5*time.Second, time.Hour),
 	}
 
 	for {
-		fmt.Fprint(w, "Pokedex > ")
+		fmt.Fprint(w, "Pokedex >> ")
 		if !scanner.Scan() {
 			break
 		}
