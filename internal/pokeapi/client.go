@@ -1,6 +1,7 @@
 package pokeapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,7 @@ type Client struct {
 	httpClient http.Client
 }
 
+// Methods
 func NewClient(timeout, cacheInterval time.Duration) Client {
 	return Client{
 		cache:      pokecache.NewCache(cacheInterval),
@@ -45,4 +47,55 @@ func (c *Client) get(url string) ([]byte, error) {
 
 	c.cache.Add(url, data)
 	return data, nil
+}
+
+func (c *Client) GetLocationAreas(pageURL *string) (LocationAreaResponse, error) {
+	url := baseURL + "/location-area"
+	if pageURL != nil {
+		url = *pageURL
+	}
+
+	data, err := c.get(url)
+	if err != nil {
+		return LocationAreaResponse{}, err
+	}
+
+	var locations LocationAreaResponse
+	if err := json.Unmarshal(data, &locations); err != nil {
+		return LocationAreaResponse{}, fmt.Errorf("could not decode response body: %w", err)
+	}
+
+	return locations, nil
+}
+
+func (c *Client) GetLocationAreaPokemons(areaName string) (LocationAreaPokemons, error) {
+	url := baseURL + "/location-area/" + areaName
+
+	data, err := c.get(url)
+	if err != nil {
+		return LocationAreaPokemons{}, err
+	}
+
+	var areaPokemons LocationAreaPokemons
+	if err := json.Unmarshal(data, &areaPokemons); err != nil {
+		return LocationAreaPokemons{}, fmt.Errorf("could not decode response body: %w", err)
+	}
+
+	return areaPokemons, nil
+}
+
+func (c *Client) GetPokemon(pokemonName string) (Pokemon, error) {
+	url := baseURL + "/pokemon/" + pokemonName
+
+	data, err := c.get(url)
+	if err != nil {
+		return Pokemon{}, err
+	}
+
+	var pokemon Pokemon
+	if err := json.Unmarshal(data, &pokemon); err != nil {
+		return Pokemon{}, fmt.Errorf("could not decode response body: %w", err)
+	}
+
+	return pokemon, nil
 }
