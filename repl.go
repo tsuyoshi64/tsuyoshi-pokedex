@@ -47,6 +47,11 @@ func init() {
 			description: "Catching Pokemon adds them to the user's Pokedex",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Prints the name, height, weight, stats and type(s) of a Pokemon",
+			callback:    commandInspect,
+		},
 	}
 }
 
