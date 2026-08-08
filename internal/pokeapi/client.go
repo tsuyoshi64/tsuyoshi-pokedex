@@ -17,7 +17,6 @@ type Client struct {
 	httpClient http.Client
 }
 
-// Methods
 func NewClient(timeout, cacheInterval time.Duration) Client {
 	return Client{
 		cache:      pokecache.NewCache(cacheInterval),
@@ -25,6 +24,7 @@ func NewClient(timeout, cacheInterval time.Duration) Client {
 	}
 }
 
+// Methods
 func (c *Client) get(url string) ([]byte, error) {
 	if data, ok := c.cache.Get(url); ok {
 		return data, nil
