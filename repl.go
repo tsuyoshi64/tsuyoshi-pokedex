@@ -42,6 +42,11 @@ func init() {
 			description: "Displays a list of all the Pokémon located in the current area",
 			callback:    commandExplore,
 		},
+		"catch": {
+			name:        "catch",
+			description: "Catching Pokemon adds them to the user's Pokedex",
+			callback:    commandCatch,
+		},
 	}
 }
 
@@ -50,6 +55,7 @@ type config struct {
 	previous      *string
 	next          *string
 	writer        io.Writer
+	pokedex       map[string]pokeapi.Pokemon
 }
 
 func cleanInput(text string) []string {
