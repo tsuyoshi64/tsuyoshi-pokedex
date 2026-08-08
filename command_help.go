@@ -5,7 +5,7 @@ import (
 	"sort"
 )
 
-func commandHelp(cfg *config) error {
+func commandHelp(cfg *config, args ...string) error {
 	fmt.Fprintln(cfg.writer, "Welcome to the Pokedex!")
 	fmt.Fprintln(cfg.writer, "Usage:")
 	fmt.Fprintln(cfg.writer)
@@ -19,7 +19,7 @@ func commandHelp(cfg *config) error {
 
 	for _, k := range keys {
 		cmd := commands[k]
-		fmt.Fprintf(cfg.writer, "%s: %s\n", cmd.name, cmd.description)
+		fmt.Fprintf(cfg.writer, " - %s:\t%s\n", cmd.name, cmd.description)
 	}
 	return nil
 }

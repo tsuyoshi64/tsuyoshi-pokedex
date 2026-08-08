@@ -22,7 +22,7 @@ func startRepl(r io.Reader, w io.Writer) {
 	}
 
 	for {
-		fmt.Fprint(w, "Pokedex >> ")
+		fmt.Fprint(w, "Pokedex > ")
 		if !scanner.Scan() {
 			break
 		}
@@ -33,6 +33,7 @@ func startRepl(r io.Reader, w io.Writer) {
 		}
 
 		commandName := cleaned[0]
+		args := cleaned[1:]
 
 		cmd, exists := commands[commandName]
 		if !exists {
@@ -40,7 +41,7 @@ func startRepl(r io.Reader, w io.Writer) {
 			continue
 		}
 
-		err := cmd.callback(cfg)
+		err := cmd.callback(cfg, args...)
 		if err != nil {
 			fmt.Fprintf(w, "Error executing command %s: %v\n", commandName, err)
 		}
