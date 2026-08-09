@@ -126,10 +126,10 @@ Catch results are random. If a Pokemon escapes, run `catch <pokemon>` again.
 | --- | --- |
 | `help` | Prints the available commands. |
 | `exit` | Exits the REPL. |
-| `map` | Prints the next 20 location areas from PokeAPI. |
+| `map` | Prints the next 20 location areas from [PokeAPI Location Areas Endpoint](https://pokeapi.co/docs/v2#location-areas). |
 | `mapb` | Prints the previous 20 location areas. If you are already on the first page, it says so. |
 | `explore <location>` | Lists Pokemon encounters for a location area, such as `explore canalave-city-area`. |
-| `catch <pokemon>` | Attempts to catch a Pokemon by name. Caught Pokemon are added to the in-memory Pokedex. |
+| `catch <pokemon>` | Attempts to catch a [Pokemon](https://pokeapi.co/docs/v2#pokemon) by name. Caught Pokemon are added to the in-memory Pokedex. |
 | `inspect <pokemon>` | Prints height, weight, stats, and types for a Pokemon you have already caught. |
 | `pokedex` | Lists all Pokemon caught during the current REPL session. |
 
