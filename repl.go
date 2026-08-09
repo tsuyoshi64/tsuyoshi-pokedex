@@ -52,6 +52,11 @@ func init() {
 			description: "Prints the name, height, weight, stats and type(s) of a Pokemon",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Prints a list of all the names of the Pokemon the you have caught",
+			callback:    commandPokedex,
+		},
 	}
 }
 
