@@ -30,5 +30,7 @@ func commandCatch(cfg *config, args ...string) error {
 	} else {
 		fmt.Fprintf(cfg.writer, "%s escaped!\n", pokemonName)
 	}
+
+	fmt.Fprintln(cfg.writer, "You may now inspect it with the 'inspect' command.")
 	return nil
 }
