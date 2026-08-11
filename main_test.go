@@ -51,7 +51,7 @@ func TestStartRepl(t *testing.T) {
 			expectedOutput: []string{
 				"Welcome to the Pokedex!",
 				"Usage:",
-				"help: Displays a help message",
+				"help:\tDisplays a help message",
 			},
 		},
 		{

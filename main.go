@@ -22,7 +22,7 @@ func startRepl(r io.Reader, w io.Writer) {
 	}
 
 	for {
-		fmt.Fprint(w, "Pokedex > ")
+		fmt.Fprint(w, "Pokedex >> ")
 		if !scanner.Scan() {
 			break
 		}
